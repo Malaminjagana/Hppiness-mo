@@ -6,12 +6,12 @@
 //  4. NEVER paste the service_role key here. Only anon key.
 // ============================================================
 window.JAGANA_CONFIG = {
-  SUPABASE_URL: "https://YOUR-PROJECT.supabase.co",   // <-- paste yours
-  SUPABASE_ANON_KEY: "YOUR-ANON-KEY-HERE",           // <-- paste yours
+  SUPABASE_URL: "https://mtgrlikmwxjorqoerscu.supabase.co",   // <-- paste yours
+  SUPABASE_ANON_KEY: "sb_publishable_jgG5UFLKC3pcluXJV6oN0A_SYToqjeq",           // <-- paste yours
   // Demo mode is used ONLY while the 2 lines above are still placeholders.
   // Once you paste real keys, demo login stops working and only Mohamed's Supabase account works.
   DEMO_EMAIL: "mohamed.jagana@shop.local",
   DEMO_PASSWORD: "demo1234",
   SHOP_NAME: "Jagana African Shop",
-  CURRENCY: "EUR" // EUR | GBP | USD
+  CURRENCY: "GMD" // GMD | GBP | USD
 };
