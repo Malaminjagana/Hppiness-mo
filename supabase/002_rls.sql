@@ -1,0 +1,11 @@
+alter table public.allowed_users enable row level security;
+alter table public.products enable row level security;
+alter table public.purchase_batches enable row level security;
+alter table public.sales enable row level security;
+alter table public.sale_allocations enable row level security;
+alter table public.stock_movements enable row level security;
+alter table public.expenses enable row level security;
+alter table public.audit_logs enable row level security;
+create or replace function public.is_allowed() returns boolean language sql stable as $$ select exists(select 1 from public.allowed_users where user_id=auth.uid()) $$;
+create policy "allowed read own" on public.allowed_users for select using (user_id=auth.uid());
+DO $$ DECLARE t text; BEGIN FOREACH t IN ARRAY ARRAY['products','purchase_batches','sales','sale_allocations','stock_movements','expenses','audit_logs'] LOOP EXECUTE format('create policy "owner all %s" on public.%I for all using (public.is_allowed() and user_id=auth.uid()) with check (public.is_allowed() and user_id=auth.uid())',t,t); END LOOP; END $$;

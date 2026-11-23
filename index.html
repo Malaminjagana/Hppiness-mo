@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0F3D2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jagana Shop">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Jagana African Shop — Inventory</title>
+<!-- ============================================================
+  JAGANA AFRICAN SHOP — PLAIN HTML + CSS + JS VERSION
+  HOW TO EDIT (no coding tools needed):
+  1. Open this file in any text editor (Notepad, VS Code).
+  2. Search for:  ✏️ EDIT ME
+  3. Change the text / prices / products there, save, refresh browser.
+  4. Your data is saved in your browser (localStorage). No internet needed.
+  TO ADD SUPABASE LATER: search for:  🔌 SUPABASE LATER
+     and follow the 3 steps in js/supabase-later.js
+  ============================================================ -->
+<style>
+/* ================= ✏️ EDIT ME — COLOURS =================
+   Change these 3 colours to change the whole shop look. */
+:root{ --green:#0F3D2E; --green2:#1A5C44; --amber:#E8A020; --cream:#FFF9F0; --red:#DC2626; }
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--cream);color:#111}
+button{cursor:pointer;min-height:48px} input,select,textarea{font-size:16px !important} /* 16px stops iPhone zooming when you tap a field */
+.bottomnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0F3D2E;color:#fff;z-index:80;padding:6px 4px calc(6px + env(safe-area-inset-bottom));gap:2px;justify-content:space-around}
+.bottomnav button{background:transparent;border:0;color:#fff;font-size:11px;padding:6px 2px;min-height:56px;flex:1;line-height:1.2}
+.bottomnav button.active{background:rgba(255,255,255,.18);border-radius:12px}
+@media(max-width:820px){ .bottomnav{display:flex} main{padding-bottom:90px} .topbar h2{font-size:18px} } input,select,textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;background:#fff;font-size:15px}
+label{font-size:13px;font-weight:600;display:block;margin:12px 0 4px}
+.btn{background:var(--green);color:#fff;border:0;padding:11px 16px;border-radius:10px;font-weight:700}
+.btn-amber{background:var(--amber);color:#111}.btn-red{background:var(--red);color:#fff}.btn-ghost{background:#eee;color:#111}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+/* Login */
+#loginPage{min-height:100vh;display:grid;place-items:center;background:var(--green);padding:16px}
+.login-card{width:100%;max-width:420px}
+/* Layout */
+#app{display:none} #app.show{display:flex}
+aside{width:250px;min-height:100vh;background:var(--green);color:#fff;padding:20px;position:sticky;top:0}
+aside a{display:block;color:#fff;text-decoration:none;padding:10px 12px;border-radius:10px;margin:2px 0}
+aside a.active,aside a:hover{background:rgba(255,255,255,.15)}
+main{flex:1;padding:20px;max-width:1200px}
+.topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.grid{display:grid;gap:14px}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+.kpi .n{font-size:26px;font-weight:800}.kpi .l{color:#666;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;border-bottom:1px solid #eee;text-align:left;vertical-align:middle}
+.thumb{width:56px;height:56px;object-fit:cover;border-radius:10px;background:#FFF3D6;display:flex;align-items:center;justify-content:center;font-size:24px}
+.thumb-lg{width:110px;height:110px;object-fit:cover;border-radius:14px;background:#FFF3D6}
+.badge{padding:3px 8px;border-radius:20px;font-size:12px;font-weight:700}.low{background:#FEF3C7}.out{background:#FEE2E2}.ok{background:#DCFCE7}
+.bar{height:12px;background:var(--amber);border-radius:6px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;place-items:center;padding:16px;z-index:50}
+.modal-bg.show{display:grid}.modal{background:#fff;border-radius:18px;padding:20px;width:100%;max-width:560px;max-height:92vh;overflow:auto}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.timeline{border-left:3px solid var(--amber);padding-left:16px;margin-left:8px}.tl{margin:10px 0}
+.toast{position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:12px 16px;border-radius:12px;display:none;z-index:99}
+@media(max-width:820px){ aside{display:none} aside.open{display:block;position:fixed;z-index:60;width:260px} .g3,.g2{grid-template-columns:1fr 1fr} }
+@media(max-width:520px){ .g3,.g2{grid-template-columns:1fr} }
+</style>
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginPage"><form class="card login-card" onsubmit="return doLogin(event)">
+  <!-- ✏️ EDIT ME — SHOP NAME / LOGIN TEXT -->
+  <h1 style="margin:0">🌍 Jagana African Shop</h1>
+  <p style="color:#666">Private access — Mohamed Jagana only.</p><p id="modeBadge" style="font-size:12px"></p>
+  <label>Email</label><input id="loginEmail" type="email" required value="mohamed.jagana@shop.local">
+  <label>Password</label><input id="loginPass" type="password" required value="demo1234">
+  <p id="loginErr" style="color:var(--red);display:none">Wrong email or password. Try the demo login above.</p>
+  <button class="btn" style="width:100%;margin-top:14px">Log in</button>
+  <p style="font-size:12px;color:#888">Demo: mohamed.jagana@shop.local / demo1234<br>Change this in JS: search for <b>DEMO_LOGIN</b></p>
+</form></div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+<aside id="sidebar">
+  <!-- ✏️ EDIT ME — SHOP NAME IN SIDEBAR -->
+  <div style="font-weight:800;font-size:19px">🌍 Jagana Shop</div>
+  <div style="font-size:12px;opacity:.8" id="who"></div>
+  <nav style="margin-top:18px" id="nav"></nav>
+  <button class="btn-amber btn" style="width:100%;margin-top:18px" onclick="logout()">Logout</button>
+  <button class="btn-ghost btn" style="width:100%;margin-top:8px" onclick="resetDemo()">Reset demo data</button>
+</aside>
+<main>
+  <div class="topbar"><button class="btn-ghost btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
+  <h2 id="pageTitle" style="margin:0">Dashboard</h2>
+  <div class="flex"><input id="globalSearch" placeholder="Search products…" style="width:220px" oninput="render()"><select id="currencySel" onchange="setCurrency(this.value)" style="width:110px"><option>GMD</option><option>GBP</option><option>USD</option></select></div></div>
+  <div id="content" style="margin-top:16px"></div>
+</main>
+</div>
+<nav class="bottomnav" id="bottomNav">
+<button onclick="go('dashboard')" data-nav="dashboard">📊<br>Home</button>
+<button onclick="go('products')" data-nav="products">📦<br>Products</button>
+<button onclick="go('purchases')" data-nav="purchases">🚚<br>Buy</button>
+<button onclick="go('sales')" data-nav="sales">🧾<br>Sell</button>
+<button onclick="go('reports')" data-nav="reports">📈<br>Reports</button>
+</nav>
+<div class="toast" id="toast"></div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ============================================================
+   ✏️ EDIT ME — EXAMPLE DATA
+   Change the products / purchases / sales below, save, then
+   click "Reset demo data" in the sidebar to load your version.
+   Images: put a photo URL in image: "https://..." OR leave "".
+   When Mohamed adds a product in the app, he can upload a photo
+   from his phone — that photo is saved in the browser.
+   ============================================================ */
+const DEMO_LOGIN = { email:"mohamed.jagana@shop.local", password:"demo1234" };
+const DEMO_DATA = {
+  currency:"GMD",
+  products:[
+    // ✏️ EDIT ME — EXAMPLE PRODUCT 1 — change name, price, category, image
+    {id:"p1", name:"Rice 25kg Bag", category:"Grains", description:"Long grain rice, 25kg bag", unit:"bag", price:3.00, minStock:10, notes:"Best seller", image:""},
+    // ✏️ EDIT ME — EXAMPLE PRODUCT 2
+    {id:"p2", name:"Palm Oil 5L", category:"Oils", description:"Red palm oil", unit:"litre", price:4.50, minStock:5, notes:"", image:""},
+    {id:"p3", name:"Maggi Cubes Box", category:"Spices", description:"Seasoning cubes", unit:"box", price:1.20, minStock:20, notes:"", image:""},
+    {id:"p4", name:"Dried Fish", category:"Fish & Meat", description:"Smoked dried fish", unit:"kg", price:8.00, minStock:3, notes:"", image:""},
+    {id:"p5", name:"Plantain Chips", category:"Snacks", description:"Crispy plantain chips", unit:"packet", price:2.00, minStock:15, notes:"", image:""},
+  ],
+  // ✏️ EDIT ME — EXAMPLE PURCHASES (separate batches — keep them separate!)
+  batches:[
+    {id:"b1", productId:"p1", qty:100, remaining:75, purchaseDate:"2026-11-05", arrivalDate:"2026-11-05", total:200, supplier:"Lagos Supplier", notes:""},
+    {id:"b2", productId:"p1", qty:50, remaining:50, purchaseDate:"2026-11-15", arrivalDate:"2026-11-15", total:115, supplier:"Lagos Supplier", notes:""},
+    {id:"b3", productId:"p2", qty:40, remaining:32, purchaseDate:"2026-11-06", arrivalDate:"2026-11-07", total:120, supplier:"Accra Oils", notes:""},
+    {id:"b4", productId:"p3", qty:100, remaining:82, purchaseDate:"2026-11-08", arrivalDate:"2026-11-08", total:60, supplier:"", notes:""},
+  ],
+  sales:[
+    {id:"s1", productId:"p1", qty:10, date:"2026-11-10", price:3.00},
+    {id:"s2", productId:"p1", qty:15, date:"2026-11-20", price:3.00},
+    {id:"s3", productId:"p2", qty:8, date:"2026-11-12", price:4.50},
+    {id:"s4", productId:"p3", qty:18, date:"2026-11-14", price:1.20},
+  ],
+  expenses:[
+    {id:"e1", desc:"Transport — market pickup", amount:25, date:"2026-11-07", category:"transport", notes:""},
+    {id:"e2", desc:"Shop rent — November", amount:400, date:"2026-11-01", category:"rent", notes:""},
+  ],
+  audit:[]
+};
+/* 🔌 SUPABASE LATER — Step 1: when you are ready, replace localStorage below with Supabase calls.
+   Step 2: create a free Supabase project, run your SQL, copy URL + anon key.
+   Step 3: replace load()/save() with supabase.from('products').select() etc. Keep the same field names. */
+let DB = load();
+function load(){ try{ const s=localStorage.getItem("jagana-shop"); if(s) return JSON.parse(s); }catch(e){} return JSON.parse(JSON.stringify(DEMO_DATA)); }
+function save(){ localStorage.setItem("jagana-shop", JSON.stringify(DB)); }
+function resetDemo(){ if(confirm("Reset to example data? Your changes will be lost.")){ DB=JSON.parse(JSON.stringify(DEMO_DATA)); save(); render(); toast("Demo data reset"); } }
+function uid(){ return "id"+Math.random().toString(36).slice(2,9); }
+function money(n){ const sym={GMD:"€",GBP:"£",USD:"$"}[DB.currency]||"€"; return sym+Number(n||0).toFixed(2); }
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.style.display="block"; setTimeout(()=>t.style.display="none",2500); }
+function stockOf(pid){ return DB.batches.filter(b=>b.productId===pid).reduce((a,b)=>a+Number(b.remaining),0); }
+function product(pid){ return DB.products.find(p=>p.id===pid); }
+
+
+/* ============================================================
+   🔌 SUPABASE — PRODUCTION MODE (added in this version)
+   - If js/config.js still has YOUR-PROJECT placeholders -> DEMO mode (old behaviour, data in browser only)
+   - If you pasted real URL + anon key -> SUPABASE mode:
+     Login = supabase.auth.signInWithPassword (only Mohamed, if you turned OFF signup + added him to allowed_users)
+     Data = saved to Supabase tables AND browser cache. On login, data is loaded FROM Supabase.
+     Images = uploaded to private Storage bucket 'product-images', signed URL saved as image_url.
+   You do NOT need to edit anything below. Only edit js/config.js.
+   ============================================================ */
+let SUPA = null, SUPA_MODE = false, SUPA_USER = null;
+function initSupabase(){
+  const c = window.JAGANA_CONFIG || {};
+  if(c.SUPABASE_URL && c.SUPABASE_URL.indexOf("YOUR-PROJECT") === -1 && c.SUPABASE_ANON_KEY && c.SUPABASE_ANON_KEY.indexOf("YOUR-ANON") === -1){
+    try{ SUPA = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY); SUPA_MODE = true; }catch(e){ SUPA_MODE = false; }
+  }
+  const badge = document.getElementById("modeBadge");
+  if(badge) badge.textContent = SUPA_MODE ? "● Connected to Supabase — private" : "○ Demo mode — add Supabase keys in js/config.js to go private";
+  if(badge) badge.style.color = SUPA_MODE ? "#16A34A" : "#B45309";
+}
+async function supaLoadAll(){
+  if(!SUPA_MODE) return false;
+  const { data: { session } } = await SUPA.auth.getSession();
+  if(!session) return false;
+  SUPA_USER = session.user;
+  const [p,b,s,e] = await Promise.all([
+    SUPA.from("products").select("*").order("created_at",{ascending:false}),
+    SUPA.from("purchase_batches").select("*").order("arrival_date",{ascending:false}),
+    SUPA.from("sales").select("*").order("sale_date",{ascending:false}),
+    SUPA.from("expenses").select("*").order("expense_date",{ascending:false}),
+  ]);
+  if(p.error) { toast("Supabase error: "+p.error.message+" — check allowed_users + RLS"); return false; }
+  DB.products = (p.data||[]).map(x=>({id:x.id,name:x.name,category:x.category,description:x.description||"",unit:x.unit,price:Number(x.selling_price),minStock:Number(x.min_stock),notes:x.notes||"",image:x.image_url||""}));
+  DB.batches = (b.data||[]).map(x=>({id:x.id,productId:x.product_id,qty:Number(x.qty_purchased),remaining:Number(x.qty_remaining),purchaseDate:x.purchase_date,arrivalDate:x.arrival_date,total:Number(x.total_cost),supplier:x.supplier||"",notes:x.notes||""}));
+  DB.sales = (s.data||[]).map(x=>({id:x.id,productId:x.product_id,qty:Number(x.qty),date:x.sale_date,price:Number(x.unit_price)}));
+  DB.expenses = (e.data||[]).map(x=>({id:x.id,desc:x.description,amount:Number(x.amount),date:x.expense_date,category:x.category,notes:x.notes||""}));
+  save(); return true;
+}
+async function supaInsert(table, row){ if(!SUPA_MODE) return null; const {data,error} = await SUPA.from(table).insert(row).select().single(); if(error) throw error; return data; }
+async function supaDelete(table, id){ if(!SUPA_MODE) return; const {error} = await SUPA.from(table).delete().eq("id",id); if(error) throw error; }
+
+/* ---------- LOGIN ---------- */
+async function doLogin(e){ e.preventDefault();
+  const em=document.getElementById("loginEmail").value.trim(), pw=document.getElementById("loginPass").value;
+  const errEl=document.getElementById("loginErr"); errEl.style.display="none";
+  if(SUPA_MODE){
+    const {data, error} = await SUPA.auth.signInWithPassword({email:em, password:pw});
+    if(error){ errEl.textContent = error.message + " — Check: is this Mohamed's Supabase account? Is he in allowed_users?"; errEl.style.display="block"; return false; }
+    SUPA_USER = data.user;
+    // Must be in allowed_users, otherwise log straight back out
+    const {data: allowed} = await SUPA.from("allowed_users").select("*").eq("user_id", SUPA_USER.id).maybeSingle();
+    if(!allowed){ await SUPA.auth.signOut(); errEl.textContent="This email is not authorized for this shop."; errEl.style.display="block"; return false; }
+    await supaLoadAll(); showApp(em);
+  } else {
+    const cfg = window.JAGANA_CONFIG||{};
+    if(em===(cfg.DEMO_EMAIL||DEMO_LOGIN.email) && pw===(cfg.DEMO_PASSWORD||DEMO_LOGIN.password)){ localStorage.setItem("jagana-logged","1"); showApp(em); }
+    else { errEl.textContent="Wrong email or password. Try the demo login above."; errEl.style.display="block"; }
+  }
+  return false; }
+async function logout(){ if(SUPA_MODE){ try{ await SUPA.auth.signOut(); }catch(e){} } localStorage.removeItem("jagana-logged"); location.reload(); }
+function showApp(email){ document.getElementById("loginPage").style.display="none"; document.getElementById("app").classList.add("show"); document.getElementById("who").textContent="Logged in: "+(email||"Mohamed"); buildNav(); render(); }
+(async function boot(){ initSupabase();
+  if(SUPA_MODE){ const {data:{session}} = await SUPA.auth.getSession(); if(session){ const {data: allowed} = await SUPA.from("allowed_users").select("*").eq("user_id", session.user.id).maybeSingle(); if(allowed){ await supaLoadAll(); showApp(session.user.email); return; } else { await SUPA.auth.signOut(); } } }
+  else if(localStorage.getItem("jagana-logged")==="1") showApp();
+})();
+
+/* ---------- NAV ---------- */
+let page="dashboard";
+const PAGES=[["dashboard","📊 Dashboard"],["products","📦 Products"],["purchases","🚚 Stock Purchases"],["sales","🧾 Sales"],["history","🕘 Inventory History"],["expenses","💸 Expenses"],["reports","📈 Reports"],["settings","⚙️ Settings"]];
+function buildNav(){ document.getElementById("nav").innerHTML=PAGES.map(([k,l])=>`<a href="#" class="${k===page?'active':''}" onclick="go('${k}');return false">${l}</a>`).join(""); }
+function go(k){ page=k; document.querySelectorAll("#bottomNav button").forEach(b=>b.classList.toggle("active", b.dataset.nav===k)); document.getElementById("pageTitle").textContent=PAGES.find(x=>x[0]===k)[1]; buildNav(); render(); document.getElementById("sidebar").classList.remove("open"); }
+function setCurrency(v){ DB.currency=v; save(); render(); }
+
+/* ---------- MODALS ---------- */
+function openModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("modalBg").classList.add("show"); }
+function closeModal(){ document.getElementById("modalBg").classList.remove("show"); }
+document.getElementById("modalBg").addEventListener("click",e=>{ if(e.target.id==="modalBg") closeModal(); });
+
+/* ---------- IMAGE UPLOAD — the part you asked for ----------
+   Mohamed picks a photo from phone/gallery. It is shown instantly
+   and saved in the browser (localStorage) with the product.
+   Later, in Supabase, this same file will go to Storage instead. */
+let pendingImage = "";
+function onImagePicked(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  if(!["image/jpeg","image/png","image/webp"].includes(f.type)){ alert("Please choose JPG, PNG or WebP."); return; }
+  if(f.size>5*1024*1024){ alert("Image too large. Max 5MB."); return; }
+  if(SUPA_MODE && SUPA_USER){
+    (async()=>{ try{
+      const ext=(f.name.split(".").pop()||"jpg").toLowerCase();
+      const path = SUPA_USER.id + "/new/" + crypto.randomUUID() + "-" + f.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+      const {error: upErr} = await SUPA.storage.from("product-images").upload(path, f, {contentType:f.type});
+      if(upErr) throw upErr;
+      const {data: signed, error: sErr} = await SUPA.storage.from("product-images").createSignedUrl(path, 60*60*24*365);
+      if(sErr) throw sErr;
+      pendingImage = signed.signedUrl; window.__pendingImagePath = path;
+      const pv=document.getElementById("imgPreview"); if(pv) pv.innerHTML=`<img src="${pendingImage}" class="thumb-lg" style="width:96px;height:96px">`;
+      toast("Image uploaded to Supabase");
+    }catch(err){ toast("Image upload failed: "+err.message); } })();
+    return;
+  }
+  const r=new FileReader(); r.onload=()=>{ pendingImage=r.result; const pv=document.getElementById("imgPreview"); if(pv) pv.innerHTML=`<img src="${pendingImage}" class="thumb-lg" style="width:96px;height:96px">`; }; r.readAsDataURL(f);
+}
+function removePendingImage(){ pendingImage=""; const pv=document.getElementById("imgPreview"); if(pv) pv.innerHTML="📦"; }
+
+/* ---------- RENDER ---------- */
+function render(){
+  const q=(document.getElementById("globalSearch")?.value||"").toLowerCase();
+  const el=document.getElementById("content"); if(!el) return;
+  if(page==="dashboard") el.innerHTML=dashboardHTML();
+  if(page==="products") el.innerHTML=productsHTML(q);
+  if(page==="purchases") el.innerHTML=purchasesHTML();
+  if(page==="sales") el.innerHTML=salesHTML();
+  if(page==="history") el.innerHTML=historyHTML();
+  if(page==="expenses") el.innerHTML=expensesHTML();
+  if(page==="reports") el.innerHTML=reportsHTML();
+  if(page==="settings") el.innerHTML=settingsHTML();
+}
+function imgTag(p,cls){ return p.image?`<img src="${p.image}" class="${cls||'thumb'}">`:`<span class="${cls||'thumb'}">📦</span>`; }
+function dashboardHTML(){
+  const spent=DB.batches.reduce((a,b)=>a+Number(b.total),0);
+  const inv=DB.batches.reduce((a,b)=>a+Number(b.remaining)*(Number(b.total)/Number(b.qty)),0);
+  const stock=DB.batches.reduce((a,b)=>a+Number(b.remaining),0);
+  const low=DB.products.filter(p=>{const s=stockOf(p.id); return s>0&&s<=p.minStock}).length;
+  const out=DB.products.filter(p=>stockOf(p.id)===0).length;
+  const cards=[["Total Products",DB.products.length],["Total Stock",stock],["Low Stock",low],["Out of Stock",out],["Total Spent",money(spent)],["Inventory Value",money(inv)]];
+  return `<div class="grid g3">${cards.map(([l,v])=>`<div class="card kpi"><div class="l">${l}</div><div class="n">${v}</div></div>`).join("")}</div>
+  <div class="grid g2" style="margin-top:14px">
+   <div class="card"><h3>Recent Purchases</h3>${DB.batches.slice(-4).reverse().map(b=>`<div class="between"><span>${product(b.productId)?.name||"?"} — ${b.qty} bags • ${b.arrivalDate}</span><b>${money(b.total)}</b></div>`).join("")}</div>
+   <div class="card"><h3>Recent Sales</h3>${DB.sales.slice(-4).reverse().map(s=>`<div class="between"><span>${product(s.productId)?.name||"?"} — ${s.qty} sold • ${s.date}</span><b>${money(s.qty*s.price)}</b></div>`).join("")}</div>
+   <div class="card"><h3>Recently Added Products</h3>${DB.products.slice(-3).map(p=>`<div class="flex">${imgTag(p)}<span>${p.name} — ${money(p.price)} / ${p.unit}</span></div>`).join("")}</div>
+   <div class="card"><h3>Stock by Product</h3>${DB.products.map(p=>{const s=stockOf(p.id),mx=Math.max(1,...DB.products.map(x=>stockOf(x.id)));return `<div style="margin:8px 0"><div class="between"><span>${p.name}</span><b>${s}</b></div><div style="background:#eee;border-radius:6px"><div class="bar" style="width:${s/mx*100}%"></div></div></div>`}).join("")}</div>
+  </div>`;
+}
+function productsHTML(q){
+  const list=DB.products.filter(p=>(p.name+" "+p.category).toLowerCase().includes(q));
+  return `<div class="between"><h3 style="margin:0">Products (${list.length})</h3><button class="btn" onclick="openProductForm()">+ Add Product</button></div>
+  <div class="card" style="margin-top:12px"><table><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th></th></tr>
+  ${list.map(p=>{const s=stockOf(p.id);return `<tr><td>${imgTag(p)}</td><td><b>${p.name}</b><br><small>${p.description||""}</small></td><td>${p.category}</td><td>${money(p.price)} / ${p.unit}</td><td><span class="badge ${s===0?'out':s<=p.minStock?'low':'ok'}">${s} ${s===0?'— OUT':s<=p.minStock?'— LOW':''}</span></td><td><button class="btn-ghost btn" onclick="openProductForm('${p.id}')">Edit</button> <button class="btn-ghost btn" onclick="viewHistory('${p.id}')">History</button> <button class="btn-red btn" onclick="delProduct('${p.id}')">Delete</button></td></tr>`}).join("")}</table></div>`;
+}
+function openProductForm(id){
+  const p=id?product(id):null; pendingImage=p?p.image||"":"";
+  openModal(`<h3>${p?"Edit":"Add"} Product</h3>
+  <label>Product image (optional)</label>
+  <div class="flex"><div id="imgPreview">${p&&p.image?`<img src="${p.image}" class="thumb-lg" style="width:96px;height:96px">`:"📦"}</div>
+  <div><input type="file" accept="image/jpeg,image/png,image/webp" onchange="onImagePicked(this)" style="display:none" id="filePick">
+  <button type="button" class="btn" onclick="document.getElementById('filePick').click()">Add / Change image</button>
+  <button type="button" class="btn-ghost btn" onclick="removePendingImage()">Remove</button><br><small>JPG, PNG or WebP, max 5MB. From phone camera or gallery.</small></div></div>
+  <label>Product name *</label><input id="fName" value="${p?p.name:""}" placeholder="e.g. Rice 25kg">
+  <label>Category</label><select id="fCat"><option>Grains</option><option>Oils</option><option>Spices</option><option>Fish & Meat</option><option>Snacks</option><option>Drinks</option><option>Other</option></select>
+  <label>Unit</label><select id="fUnit"><option>bag</option><option>kg</option><option>litre</option><option>piece</option><option>packet</option><option>box</option></select>
+  <div class="grid g2"><div><label>Selling price</label><input id="fPrice" type="number" step="0.01" value="${p?p.price:""}"></div><div><label>Min stock warning</label><input id="fMin" type="number" value="${p?p.minStock:0}"></div></div>
+  <label>Description</label><textarea id="fDesc">${p?p.description||"":""}</textarea>
+  <label>Notes</label><textarea id="fNotes">${p?p.notes||"":""}</textarea>
+  <button class="btn" style="width:100%;margin-top:14px" onclick="saveProduct('${p?p.id:""}')">Save product</button> <button class="btn-ghost btn" style="width:100%;margin-top:6px" onclick="closeModal()">Cancel</button>`);
+  if(p){ document.getElementById("fCat").value=p.category; document.getElementById("fUnit").value=p.unit; }
+}
+function saveProduct(id){
+  const name=document.getElementById("fName").value.trim(); if(!name){alert("Enter product name");return;}
+  const data={name, category:document.getElementById("fCat").value, unit:document.getElementById("fUnit").value, price:Number(document.getElementById("fPrice").value)||0, minStock:Number(document.getElementById("fMin").value)||0, description:document.getElementById("fDesc").value, notes:document.getElementById("fNotes").value, image:pendingImage};
+  if(id){ const p=product(id); Object.assign(p,data);
+    if(SUPA_MODE){ SUPA.from("products").update({name:data.name,category:data.category,unit:data.unit,selling_price:data.price,min_stock:data.minStock,description:data.description,notes:data.notes,image_url:data.image||null}).eq("id",id).then(r=>{ if(r.error) toast("Supabase: "+r.error.message); }); } DB.audit.push({t:new Date().toISOString(),msg:`Edited product ${name}`}); }
+  else { const nid=uid(); DB.products.push({id:nid,...data});
+    if(SUPA_MODE){ (async()=>{ try{ const row=await supaInsert("products",{user_id:SUPA_USER.id,name:data.name,category:data.category,unit:data.unit,selling_price:data.price,min_stock:data.minStock,description:data.description||null,notes:data.notes||null,image_url:data.image||null}); if(row) { const lp=product(nid); if(lp) lp.id=row.id; save(); } }catch(err){ toast("Supabase: "+err.message); } })(); } }
+  save(); closeModal(); render(); toast("✅ Product saved");
+}
+function delProduct(id){ if(!confirm("Delete this product and its image?"))return; DB.products=DB.products.filter(p=>p.id!==id); DB.batches=DB.batches.filter(b=>b.productId!==id); save(); render(); toast("Product deleted"); }
+function purchasesHTML(){
+  return `<div class="between"><h3>Stock Purchases — separate batches</h3><button class="btn" onclick="openPurchaseForm()">+ Record Purchase</button></div>
+  <div class="card" style="margin-top:12px"><table><tr><th>Product</th><th>Qty</th><th>Remaining</th><th>Purchase</th><th>Arrived</th><th>Total</th><th>Cost / unit</th><th>Supplier</th><th></th></tr>
+  ${DB.batches.slice().reverse().map(b=>`<tr><td><div class="flex">${imgTag(product(b.productId)||{name:"?"})}<b>${product(b.productId)?.name||"?"}</b></div></td><td>${b.qty}</td><td>${b.remaining} ${Number(b.remaining)===0?'— SOLD OUT':''}</td><td>${b.purchaseDate}</td><td>${b.arrivalDate}</td><td>${money(b.total)}</td><td>${money(b.total/b.qty)}</td><td>${b.supplier||"-"}</td><td><button class="btn-red btn" onclick="delBatch('${b.id}')">Delete</button></td></tr>`).join("")}</table></div>`;
+}
+function openPurchaseForm(){
+  openModal(`<h3>Record Purchase</h3><label>Product</label><select id="puProd">${DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join("")}</select>
+  <label>Quantity purchased</label><input id="puQty" type="number" value="10">
+  <div class="grid g2"><div><label>Purchase date</label><input id="puDate" type="date" value="2026-11-23"></div><div><label>Arrival date</label><input id="puArr" type="date" value="2026-11-23"></div></div>
+  <label>Total purchase cost (${DB.currency})</label><input id="puTotal" type="number" step="0.01" value="50">
+  <label>Supplier (optional)</label><input id="puSup"><label>Notes</label><textarea id="puNotes"></textarea>
+  <button class="btn" style="width:100%;margin-top:12px" onclick="savePurchase()">Save purchase</button>`);
+}
+function savePurchase(){
+  const b={id:uid(), productId:document.getElementById("puProd").value, qty:Number(document.getElementById("puQty").value), remaining:Number(document.getElementById("puQty").value), purchaseDate:document.getElementById("puDate").value, arrivalDate:document.getElementById("puArr").value, total:Number(document.getElementById("puTotal").value), supplier:document.getElementById("puSup").value, notes:document.getElementById("puNotes").value};
+  DB.batches.push(b);
+  if(SUPA_MODE){ (async()=>{ try{ const row=await supaInsert("purchase_batches",{user_id:SUPA_USER.id,product_id:b.productId,qty_purchased:b.qty,qty_remaining:b.qty,purchase_date:b.purchaseDate,arrival_date:b.arrivalDate,total_cost:b.total,supplier:b.supplier||null,notes:b.notes||null}); if(row){ b.id=row.id; save(); } }catch(err){ toast("Supabase: "+err.message); } })(); }
+  DB.audit.push({t:new Date().toISOString(),msg:`Purchase: ${b.qty} x ${product(b.productId).name} for ${money(b.total)}`}); save(); closeModal(); render(); toast("✅ Purchase recorded");
+}
+function delBatch(id){ if(!confirm("Delete this purchase batch? Stock will be corrected."))return; DB.batches=DB.batches.filter(b=>b.id!==id); save(); render(); toast("Batch deleted"); }
+function salesHTML(){
+  return `<div class="between"><h3>Sales</h3><button class="btn" onclick="openSaleForm()">+ Record Sale</button></div>
+  <div class="card" style="margin-top:12px"><table><tr><th>Product</th><th>Qty</th><th>Date</th><th>Price</th><th>Total</th><th></th></tr>
+  ${DB.sales.slice().reverse().map(s=>`<tr><td>${product(s.productId)?.name||"?"}</td><td>${s.qty}</td><td>${s.date}</td><td>${money(s.price)}</td><td><b>${money(s.qty*s.price)}</b></td><td><button class="btn-red btn" onclick="delSale('${s.id}')">Delete / Reverse</button></td></tr>`).join("")}</table></div>`;
+}
+function openSaleForm(){
+  openModal(`<h3>Record Sale</h3><label>Product</label><select id="saProd" onchange="document.getElementById('saPrice').value=product(this.value).price">${DB.products.map(p=>`<option value="${p.id}">${p.name} (stock: ${stockOf(p.id)})</option>`).join("")}</select>
+  <label>Quantity sold</label><input id="saQty" type="number" value="1">
+  <div class="grid g2"><div><label>Sale date</label><input id="saDate" type="date" value="2026-11-23"></div><div><label>Price per unit</label><input id="saPrice" type="number" step="0.01" value="${DB.products[0]?DB.products[0].price:""}"></div></div>
+  <button class="btn" style="width:100%;margin-top:12px" onclick="saveSale()">Save sale — stock will decrease (FIFO)</button>`);
+}
+function saveSale(){
+  const pid=document.getElementById("saProd").value, qty=Number(document.getElementById("saQty").value), price=Number(document.getElementById("saPrice").value);
+  const stock=stockOf(pid); if(qty<=0){alert("Enter quantity");return;} if(qty>stock){alert(`Not enough stock. You have ${stock}.`);return;}
+  // FIFO: oldest batch first
+  let left=qty; const batches=DB.batches.filter(b=>b.productId===pid&&b.remaining>0).sort((a,b)=>a.arrivalDate.localeCompare(b.arrivalDate));
+  for(const b of batches){ if(left<=0)break; const take=Math.min(b.remaining,left); b.remaining-=take; left-=take; }
+  const saleId=uid(); DB.sales.push({id:saleId, productId:pid, qty, date:document.getElementById("saDate").value, price});
+  if(SUPA_MODE){ (async()=>{ try{ await SUPA.rpc("record_sale",{p_product:pid,p_qty:qty,p_date:document.getElementById("saDate").value,p_price:price,p_notes:null}); await supaLoadAll(); render(); }catch(err){ toast("Supabase sale: "+err.message); } })(); }
+  DB.audit.push({t:new Date().toISOString(),msg:`Sale: ${qty} x ${product(pid).name}`}); save(); closeModal(); render(); toast("✅ Sale recorded — stock decreased");
+}
+function delSale(id){ if(!confirm("Reverse this sale? Stock will be put back."))return; const s=DB.sales.find(x=>x.id===id); if(!s)return;
+  // Put stock back to newest batch first (reverse of FIFO) — simple + safe for this version
+  let left=s.qty; const batches=DB.batches.filter(b=>b.productId===s.productId).sort((a,b)=>b.arrivalDate.localeCompare(a.arrivalDate));
+  for(const b of batches){ if(left<=0)break; const can=b.qty-b.remaining; const put=Math.min(can,left); b.remaining+=put; left-=put; }
+  DB.sales=DB.sales.filter(x=>x.id!==id); save(); render(); toast("Sale reversed"); }
+let historyPid = "";
+function viewHistory(pid){ historyPid=pid; go("history"); }
+function historyHTML(){
+  if(!DB.products.length) return "<p>No products yet.</p>";
+  const pid=historyPid||DB.products[0].id, p=product(pid);
+  const events=[];
+  DB.batches.filter(b=>b.productId===pid).forEach(b=>events.push({d:b.arrivalDate,txt:`🟢 ${b.qty} purchased — ${money(b.total)} (arrived ${b.arrivalDate}, bought ${b.purchaseDate}) ${b.supplier?"• "+b.supplier:""}`,sort:b.arrivalDate}));
+  DB.sales.filter(s=>s.productId===pid).forEach(s=>events.push({d:s.date,txt:`🔴 ${s.qty} sold — ${money(s.qty*s.price)}`,sort:s.date}));
+  events.sort((a,b)=>a.sort.localeCompare(b.sort));
+  const spent=DB.batches.filter(b=>b.productId===pid).reduce((a,b)=>a+Number(b.total),0);
+  const rev=DB.sales.filter(s=>s.productId===pid).reduce((a,s)=>a+s.qty*s.price,0);
+  return `<label>Choose product</label><select onchange="historyPid=this.value;render()">${DB.products.map(x=>`<option value="${x.id}" ${x.id===pid?"selected":""}>${x.name}</option>`).join("")}</select>
+  <div class="card" style="margin-top:12px"><div class="flex">${imgTag(p,"thumb-lg")}<div><h3 style="margin:0">${p.name}</h3><p style="color:#666;margin:4px 0">${p.category} • ${money(p.price)} / ${p.unit} • Stock: <b>${stockOf(pid)}</b></p><p>Spent: <b>${money(spent)}</b> • Revenue: <b>${money(rev)}</b> • Estimated profit: <b>${money(rev-spent)}</b> <small>(approx — full FIFO profit in Reports)</small></p></div></div></div>
+  <div class="card" style="margin-top:12px"><h3>Timeline</h3><div class="timeline">${events.length?events.map(e=>`<div class="tl"><b>${e.d}</b> — ${e.txt}</div>`).join(""):"<p>No history yet.</p>"}</div></div>`;
+}
+function expensesHTML(){
+  const tot=DB.expenses.reduce((a,e)=>a+Number(e.amount),0);
+  return `<div class="between"><h3>Expenses — total ${money(tot)} <small>(purchases NOT counted here)</small></h3><button class="btn" onclick="openExpenseForm()">+ Add Expense</button></div>
+  <div class="card" style="margin-top:12px"><table><tr><th>Description</th><th>Category</th><th>Date</th><th>Amount</th><th></th></tr>${DB.expenses.slice().reverse().map(e=>`<tr><td>${e.desc}</td><td>${e.category}</td><td>${e.date}</td><td>${money(e.amount)}</td><td><button class="btn-red btn" onclick="delExpense('${e.id}')">Delete</button></td></tr>`).join("")}</table></div>`;
+}
+function openExpenseForm(){ openModal(`<h3>Add Expense</h3><label>Description</label><input id="exDesc"><label>Amount</label><input id="exAmt" type="number" step="0.01"><label>Date</label><input id="exDate" type="date" value="2026-11-23"><label>Category</label><select id="exCat"><option>transport</option><option>supplier</option><option>rent</option><option>utilities</option><option>other</option></select><label>Notes</label><textarea id="exNotes"></textarea><button class="btn" style="width:100%;margin-top:12px" onclick="saveExpense()">Save</button>`); }
+function saveExpense(){ DB.expenses.push({id:uid(),desc:document.getElementById("exDesc").value,amount:Number(document.getElementById("exAmt").value),date:document.getElementById("exDate").value,category:document.getElementById("exCat").value,notes:document.getElementById("exNotes").value}); save(); closeModal(); render(); toast("✅ Expense saved"); }
+function delExpense(id){ if(!confirm("Delete expense?"))return; DB.expenses=DB.expenses.filter(e=>e.id!==id); save(); render(); }
+function reportsHTML(){
+  const rev=DB.sales.reduce((a,s)=>a+s.qty*s.price,0), purch=DB.batches.reduce((a,b)=>a+Number(b.total),0), exp=DB.expenses.reduce((a,e)=>a+Number(e.amount),0);
+  // FIFO COGS: allocate each sale to oldest batches (recomputed from batches + sales history is approximated by total batch cost * sold ratio in this simple HTML version)
+  const best=[...DB.products].map(p=>({name:p.name,sold:DB.sales.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0)})).sort((a,b)=>b.sold-a.sold);
+  return `<div class="grid g3"><div class="card kpi"><div class="l">Total Revenue</div><div class="n">${money(rev)}</div></div><div class="card kpi"><div class="l">Purchase Cost</div><div class="n">${money(purch)}</div></div><div class="card kpi"><div class="l">Other Expenses</div><div class="n">${money(exp)}</div></div></div>
+  <div class="card" style="margin-top:14px"><h3>Best-selling</h3>${best.map(b=>`<div class="between"><span>${b.name}</span><b>${b.sold} sold</b></div>`).join("")}</div>
+  <div class="card" style="margin-top:14px"><h3>Out of stock</h3>${DB.products.filter(p=>stockOf(p.id)===0).map(p=>`<div>${p.name}</div>`).join("")||"<p>None — good!</p>"}</div>
+  <button class="btn" style="margin-top:14px" onclick="exportCSV()">⬇ Export sales to CSV</button>
+  <p style="font-size:12px;color:#666">CSV downloads a file you can open in Excel / Google Sheets.</p>`;
+}
+function exportCSV(){
+  let csv="Date,Product,Qty,Price,Total\n"; DB.sales.forEach(s=>csv+=`${s.date},"${product(s.productId)?.name||"?"}",${s.qty},${s.price},${s.qty*s.price}\n`);
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="jagana-sales.csv"; a.click();
+}
+function settingsHTML(){
+  return `<div class="card"><h3>Settings</h3>
+  <label>Currency</label><select onchange="setCurrency(this.value)" style="max-width:200px"><option ${DB.currency==="GMD"?"selected":""}>GMD</option><option ${DB.currency==="GBP"?"selected":""}>GBP</option><option ${DB.currency==="USD"?"selected":""}>USD</option></select>
+  <label>Shop name (edit in HTML: search for EDIT ME)</label><input value="Jagana African Shop" disabled>
+  <h3 style="margin-top:20px">Audit log</h3>${DB.audit.slice(-20).reverse().map(a=>`<div style="font-size:13px;padding:6px 0;border-bottom:1px solid #eee">${new Date(a.t).toLocaleString()} — ${a.msg}</div>`).join("")||"<p>No changes yet.</p>"}</div>`;
+}
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+</script>
+</body>
+</html>
