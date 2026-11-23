@@ -1,1 +1,6 @@
-{"framework": null, "cleanUrls": true}
+{
+  "framework": null,
+  "cleanUrls": true,
+  "buildCommand": "node build-config.js",
+  "outputDirectory": "."
+}

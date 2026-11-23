@@ -13,13 +13,7 @@
 <title>Jagana African Shop — Inventory</title>
 <!-- ============================================================
   JAGANA AFRICAN SHOP — PLAIN HTML + CSS + JS VERSION
-  HOW TO EDIT (no coding tools needed):
-  1. Open this file in any text editor (Notepad, VS Code).
-  2. Search for:  ✏️ EDIT ME
-  3. Change the text / prices / products there, save, refresh browser.
-  4. Your data is saved in your browser (localStorage). No internet needed.
-  TO ADD SUPABASE LATER: search for:  🔌 SUPABASE LATER
-     and follow the 3 steps in js/supabase-later.js
+  App authentication and data are provided by Supabase.
   ============================================================ -->
 <style>
 /* ================= ✏️ EDIT ME — COLOURS =================
@@ -70,11 +64,10 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;
   <!-- ✏️ EDIT ME — SHOP NAME / LOGIN TEXT -->
   <h1 style="margin:0">🌍 Jagana African Shop</h1>
   <p style="color:#666">Private access — Mohamed Jagana only.</p><p id="modeBadge" style="font-size:12px"></p>
-  <label>Email</label><input id="loginEmail" type="email" required value="mohamed.jagana@shop.local">
-  <label>Password</label><input id="loginPass" type="password" required value="demo1234">
-  <p id="loginErr" style="color:var(--red);display:none">Wrong email or password. Try the demo login above.</p>
+  <label>Email</label><input id="loginEmail" type="email" required>
+  <label>Password</label><input id="loginPass" type="password" required>
+  <p id="loginErr" style="color:var(--red);display:none"></p>
   <button class="btn" style="width:100%;margin-top:14px">Log in</button>
-  <p style="font-size:12px;color:#888">Demo: mohamed.jagana@shop.local / demo1234<br>Change this in JS: search for <b>DEMO_LOGIN</b></p>
 </form></div>
 
 <!-- ================= APP ================= -->
@@ -85,7 +78,6 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;
   <div style="font-size:12px;opacity:.8" id="who"></div>
   <nav style="margin-top:18px" id="nav"></nav>
   <button class="btn-amber btn" style="width:100%;margin-top:18px" onclick="logout()">Logout</button>
-  <button class="btn-ghost btn" style="width:100%;margin-top:8px" onclick="resetDemo()">Reset demo data</button>
 </aside>
 <main>
   <div class="topbar"><button class="btn-ghost btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
@@ -105,52 +97,10 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 
 <script>
-/* ============================================================
-   ✏️ EDIT ME — EXAMPLE DATA
-   Change the products / purchases / sales below, save, then
-   click "Reset demo data" in the sidebar to load your version.
-   Images: put a photo URL in image: "https://..." OR leave "".
-   When Mohamed adds a product in the app, he can upload a photo
-   from his phone — that photo is saved in the browser.
-   ============================================================ */
-const DEMO_LOGIN = { email:"mohamed.jagana@shop.local", password:"demo1234" };
-const DEMO_DATA = {
-  currency:"GMD",
-  products:[
-    // ✏️ EDIT ME — EXAMPLE PRODUCT 1 — change name, price, category, image
-    {id:"p1", name:"Rice 25kg Bag", category:"Grains", description:"Long grain rice, 25kg bag", unit:"bag", price:3.00, minStock:10, notes:"Best seller", image:""},
-    // ✏️ EDIT ME — EXAMPLE PRODUCT 2
-    {id:"p2", name:"Palm Oil 5L", category:"Oils", description:"Red palm oil", unit:"litre", price:4.50, minStock:5, notes:"", image:""},
-    {id:"p3", name:"Maggi Cubes Box", category:"Spices", description:"Seasoning cubes", unit:"box", price:1.20, minStock:20, notes:"", image:""},
-    {id:"p4", name:"Dried Fish", category:"Fish & Meat", description:"Smoked dried fish", unit:"kg", price:8.00, minStock:3, notes:"", image:""},
-    {id:"p5", name:"Plantain Chips", category:"Snacks", description:"Crispy plantain chips", unit:"packet", price:2.00, minStock:15, notes:"", image:""},
-  ],
-  // ✏️ EDIT ME — EXAMPLE PURCHASES (separate batches — keep them separate!)
-  batches:[
-    {id:"b1", productId:"p1", qty:100, remaining:75, purchaseDate:"2026-11-05", arrivalDate:"2026-11-05", total:200, supplier:"Lagos Supplier", notes:""},
-    {id:"b2", productId:"p1", qty:50, remaining:50, purchaseDate:"2026-11-15", arrivalDate:"2026-11-15", total:115, supplier:"Lagos Supplier", notes:""},
-    {id:"b3", productId:"p2", qty:40, remaining:32, purchaseDate:"2026-11-06", arrivalDate:"2026-11-07", total:120, supplier:"Accra Oils", notes:""},
-    {id:"b4", productId:"p3", qty:100, remaining:82, purchaseDate:"2026-11-08", arrivalDate:"2026-11-08", total:60, supplier:"", notes:""},
-  ],
-  sales:[
-    {id:"s1", productId:"p1", qty:10, date:"2026-11-10", price:3.00},
-    {id:"s2", productId:"p1", qty:15, date:"2026-11-20", price:3.00},
-    {id:"s3", productId:"p2", qty:8, date:"2026-11-12", price:4.50},
-    {id:"s4", productId:"p3", qty:18, date:"2026-11-14", price:1.20},
-  ],
-  expenses:[
-    {id:"e1", desc:"Transport — market pickup", amount:25, date:"2026-11-07", category:"transport", notes:""},
-    {id:"e2", desc:"Shop rent — November", amount:400, date:"2026-11-01", category:"rent", notes:""},
-  ],
-  audit:[]
-};
-/* 🔌 SUPABASE LATER — Step 1: when you are ready, replace localStorage below with Supabase calls.
-   Step 2: create a free Supabase project, run your SQL, copy URL + anon key.
-   Step 3: replace load()/save() with supabase.from('products').select() etc. Keep the same field names. */
+const EMPTY_DB = {currency:"GMD", products:[], batches:[], sales:[], expenses:[], audit:[]};
 let DB = load();
-function load(){ try{ const s=localStorage.getItem("jagana-shop"); if(s) return JSON.parse(s); }catch(e){} return JSON.parse(JSON.stringify(DEMO_DATA)); }
+function load(){ try{ const s=localStorage.getItem("jagana-shop"); if(s) return JSON.parse(s); }catch(e){} return JSON.parse(JSON.stringify(EMPTY_DB)); }
 function save(){ localStorage.setItem("jagana-shop", JSON.stringify(DB)); }
-function resetDemo(){ if(confirm("Reset to example data? Your changes will be lost.")){ DB=JSON.parse(JSON.stringify(DEMO_DATA)); save(); render(); toast("Demo data reset"); } }
 function uid(){ return "id"+Math.random().toString(36).slice(2,9); }
 function money(n){ const sym={GMD:"€",GBP:"£",USD:"$"}[DB.currency]||"€"; return sym+Number(n||0).toFixed(2); }
 function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.style.display="block"; setTimeout(()=>t.style.display="none",2500); }
@@ -158,23 +108,16 @@ function stockOf(pid){ return DB.batches.filter(b=>b.productId===pid).reduce((a,
 function product(pid){ return DB.products.find(p=>p.id===pid); }
 
 
-/* ============================================================
-   🔌 SUPABASE — PRODUCTION MODE (added in this version)
-   - If js/config.js still has YOUR-PROJECT placeholders -> DEMO mode (old behaviour, data in browser only)
-   - If you pasted real URL + anon key -> SUPABASE mode:
-     Login = supabase.auth.signInWithPassword (only Mohamed, if you turned OFF signup + added him to allowed_users)
-     Data = saved to Supabase tables AND browser cache. On login, data is loaded FROM Supabase.
-     Images = uploaded to private Storage bucket 'product-images', signed URL saved as image_url.
-   You do NOT need to edit anything below. Only edit js/config.js.
-   ============================================================ */
+/* Supabase authentication and data access. */
 let SUPA = null, SUPA_MODE = false, SUPA_USER = null;
 function initSupabase(){
   const c = window.JAGANA_CONFIG || {};
-  if(c.SUPABASE_URL && c.SUPABASE_URL.indexOf("YOUR-PROJECT") === -1 && c.SUPABASE_ANON_KEY && c.SUPABASE_ANON_KEY.indexOf("YOUR-ANON") === -1){
-    try{ SUPA = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY); SUPA_MODE = true; }catch(e){ SUPA_MODE = false; }
+  if(c.SUPABASE_URL && c.SUPABASE_ANON_KEY && window.supabase && typeof window.supabase.createClient === "function"){
+    try{ SUPA = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY); SUPA_MODE = true; }
+    catch(error){ console.error("Could not initialize Supabase:", error); }
   }
   const badge = document.getElementById("modeBadge");
-  if(badge) badge.textContent = SUPA_MODE ? "● Connected to Supabase — private" : "○ Demo mode — add Supabase keys in js/config.js to go private";
+  if(badge) badge.textContent = SUPA_MODE ? "● Connected to Supabase — private" : "Not connected - check Vercel Environment Variables";
   if(badge) badge.style.color = SUPA_MODE ? "#16A34A" : "#B45309";
 }
 async function supaLoadAll(){
@@ -199,28 +142,61 @@ async function supaInsert(table, row){ if(!SUPA_MODE) return null; const {data,e
 async function supaDelete(table, id){ if(!SUPA_MODE) return; const {error} = await SUPA.from(table).delete().eq("id",id); if(error) throw error; }
 
 /* ---------- LOGIN ---------- */
+async function rejectLogin(errEl, message){
+  try{
+    const {error} = await SUPA.auth.signOut();
+    if(error) throw error;
+  }catch(error){
+    console.error("Could not sign out rejected user:", error);
+    message += " — sign out failed: "+error.message;
+  }
+  SUPA_USER = null;
+  errEl.textContent=message;
+  errEl.style.display="block";
+}
 async function doLogin(e){ e.preventDefault();
   const em=document.getElementById("loginEmail").value.trim(), pw=document.getElementById("loginPass").value;
   const errEl=document.getElementById("loginErr"); errEl.style.display="none";
-  if(SUPA_MODE){
+  if(!SUPA_MODE){ errEl.textContent="Not connected - check Vercel Environment Variables"; errEl.style.display="block"; return false; }
+  SUPA_USER = null;
+  try{
     const {data, error} = await SUPA.auth.signInWithPassword({email:em, password:pw});
-    if(error){ errEl.textContent = error.message + " — Check: is this Mohamed's Supabase account? Is he in allowed_users?"; errEl.style.display="block"; return false; }
+    if(error){ errEl.textContent="Wrong email or password"; errEl.style.display="block"; return false; }
     SUPA_USER = data.user;
-    // Must be in allowed_users, otherwise log straight back out
-    const {data: allowed} = await SUPA.from("allowed_users").select("*").eq("user_id", SUPA_USER.id).maybeSingle();
-    if(!allowed){ await SUPA.auth.signOut(); errEl.textContent="This email is not authorized for this shop."; errEl.style.display="block"; return false; }
-    await supaLoadAll(); showApp(em);
-  } else {
-    const cfg = window.JAGANA_CONFIG||{};
-    if(em===(cfg.DEMO_EMAIL||DEMO_LOGIN.email) && pw===(cfg.DEMO_PASSWORD||DEMO_LOGIN.password)){ localStorage.setItem("jagana-logged","1"); showApp(em); }
-    else { errEl.textContent="Wrong email or password. Try the demo login above."; errEl.style.display="block"; }
+    const {data: allowed, error: authorizationError} = await SUPA.from("allowed_users").select("user_id").eq("user_id", SUPA_USER.id).maybeSingle();
+    if(authorizationError){
+      await rejectLogin(errEl, "Authorization check failed: "+authorizationError.message);
+      return false;
+    }
+    if(!allowed){
+      await rejectLogin(errEl, "Not authorized");
+      return false;
+    }
+    if(!await supaLoadAll()) return false;
+    showApp(em);
+  }catch(error){
+    await rejectLogin(errEl, "Supabase login failed: "+error.message);
   }
   return false; }
-async function logout(){ if(SUPA_MODE){ try{ await SUPA.auth.signOut(); }catch(e){} } localStorage.removeItem("jagana-logged"); location.reload(); }
+async function logout(){
+  if(SUPA_MODE){
+    try{ const {error} = await SUPA.auth.signOut(); if(error) toast("Supabase sign out failed: "+error.message); }
+    catch(error){ toast("Supabase sign out failed: "+error.message); }
+  }
+  location.reload();
+}
 function showApp(email){ document.getElementById("loginPage").style.display="none"; document.getElementById("app").classList.add("show"); document.getElementById("who").textContent="Logged in: "+(email||"Mohamed"); buildNav(); render(); }
 (async function boot(){ initSupabase();
-  if(SUPA_MODE){ const {data:{session}} = await SUPA.auth.getSession(); if(session){ const {data: allowed} = await SUPA.from("allowed_users").select("*").eq("user_id", session.user.id).maybeSingle(); if(allowed){ await supaLoadAll(); showApp(session.user.email); return; } else { await SUPA.auth.signOut(); } } }
-  else if(localStorage.getItem("jagana-logged")==="1") showApp();
+  if(SUPA_MODE){
+    const {data:{session}, error} = await SUPA.auth.getSession();
+    if(error){ console.error("Could not restore Supabase session:", error); return; }
+    if(session){
+      const {data: allowed, error: authorizationError} = await SUPA.from("allowed_users").select("user_id").eq("user_id", session.user.id).maybeSingle();
+      if(authorizationError){ console.error("Authorization check failed:", authorizationError); return; }
+      if(allowed){ if(await supaLoadAll()) showApp(session.user.email); }
+      else { await SUPA.auth.signOut(); }
+    }
+  }
 })();
 
 /* ---------- NAV ---------- */
@@ -235,10 +211,7 @@ function openModal(html){ document.getElementById("modal").innerHTML=html; docum
 function closeModal(){ document.getElementById("modalBg").classList.remove("show"); }
 document.getElementById("modalBg").addEventListener("click",e=>{ if(e.target.id==="modalBg") closeModal(); });
 
-/* ---------- IMAGE UPLOAD — the part you asked for ----------
-   Mohamed picks a photo from phone/gallery. It is shown instantly
-   and saved in the browser (localStorage) with the product.
-   Later, in Supabase, this same file will go to Storage instead. */
+/* ---------- IMAGE UPLOAD ---------- */
 let pendingImage = "";
 function onImagePicked(input){
   const f=input.files && input.files[0]; if(!f) return;
