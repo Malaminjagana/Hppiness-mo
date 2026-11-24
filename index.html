@@ -63,7 +63,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;
 <div id="loginPage"><form class="card login-card" onsubmit="return doLogin(event)">
   <!-- ✏️ EDIT ME — SHOP NAME / LOGIN TEXT -->
   <h1 style="margin:0">🌍 Jagana African Shop</h1>
-  <p style="color:#666">Private access — Mohamed Jagana only.</p><p id="modeBadge" style="font-size:12px"></p>
+  <p style="color:#666">Private access Mohamed Jagana only.</p><p id="modeBadge" style="font-size:12px"></p>
   <label>Email</label><input id="loginEmail" type="email" required>
   <label>Password</label><input id="loginPass" type="password" required>
   <p id="loginErr" style="color:var(--red);display:none"></p>
@@ -83,6 +83,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;
   <div class="topbar"><button class="btn-ghost btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
   <h2 id="pageTitle" style="margin:0">Dashboard</h2>
   <div class="flex"><input id="globalSearch" placeholder="Search products…" style="width:220px" oninput="render()"><select id="currencySel" onchange="setCurrency(this.value)" style="width:110px"><option>GMD</option><option>GBP</option><option>USD</option></select></div></div>
+  <div id="rlsWarning" role="alert" style="display:none;margin-top:12px;padding:12px 16px;border-radius:10px;background:#FEF3C7;color:#92400E;font-weight:700"></div>
   <div id="content" style="margin-top:16px"></div>
 </main>
 </div>
@@ -131,7 +132,14 @@ async function supaLoadAll(){
     SUPA.from("sales").select("*").order("sale_date",{ascending:false}),
     SUPA.from("expenses").select("*").order("expense_date",{ascending:false}),
   ]);
-  if(p.error) { toast("Supabase error: "+p.error.message+" — check allowed_users + RLS"); return false; }
+  const results = [["products",p],["purchase_batches",b],["sales",s],["expenses",e]];
+  const deniedTables = results.filter(([,result])=>result.error?.message?.toLowerCase().includes("permission denied")).map(([table])=>table);
+  if(p.error && !deniedTables.includes("products")) { toast("Supabase error: "+p.error.message+" — check allowed_users + RLS"); return false; }
+  const warning = document.getElementById("rlsWarning");
+  if(warning){
+    warning.textContent = deniedTables.length ? `RLS policy missing for table ${deniedTables.join(", ")} - run SQL fix` : "";
+    warning.style.display = deniedTables.length ? "block" : "none";
+  }
   DB.products = (p.data||[]).map(x=>({id:x.id,name:x.name,category:x.category,description:x.description||"",unit:x.unit,price:Number(x.selling_price),minStock:Number(x.min_stock),notes:x.notes||"",image:x.image_url||""}));
   DB.batches = (b.data||[]).map(x=>({id:x.id,productId:x.product_id,qty:Number(x.qty_purchased),remaining:Number(x.qty_remaining),purchaseDate:x.purchase_date,arrivalDate:x.arrival_date,total:Number(x.total_cost),supplier:x.supplier||"",notes:x.notes||""}));
   DB.sales = (s.data||[]).map(x=>({id:x.id,productId:x.product_id,qty:Number(x.qty),date:x.sale_date,price:Number(x.unit_price)}));
@@ -292,7 +300,7 @@ function saveProduct(id){
   const data={name, category:document.getElementById("fCat").value, unit:document.getElementById("fUnit").value, price:Number(document.getElementById("fPrice").value)||0, minStock:Number(document.getElementById("fMin").value)||0, description:document.getElementById("fDesc").value, notes:document.getElementById("fNotes").value, image:pendingImage};
   if(id){ const p=product(id); Object.assign(p,data);
     if(SUPA_MODE){ SUPA.from("products").update({name:data.name,category:data.category,unit:data.unit,selling_price:data.price,min_stock:data.minStock,description:data.description,notes:data.notes,image_url:data.image||null}).eq("id",id).then(r=>{ if(r.error) toast("Supabase: "+r.error.message); }); } DB.audit.push({t:new Date().toISOString(),msg:`Edited product ${name}`}); }
-  else { const nid=uid(); DB.products.push({id:nid,...data});
+  else { const nid=crypto.randomUUID(); DB.products.push({id:nid,...data});
     if(SUPA_MODE){ (async()=>{ try{ const row=await supaInsert("products",{user_id:SUPA_USER.id,name:data.name,category:data.category,unit:data.unit,selling_price:data.price,min_stock:data.minStock,description:data.description||null,notes:data.notes||null,image_url:data.image||null}); if(row) { const lp=product(nid); if(lp) lp.id=row.id; save(); } }catch(err){ toast("Supabase: "+err.message); } })(); } }
   save(); closeModal(); render(); toast("✅ Product saved");
 }
@@ -311,7 +319,7 @@ function openPurchaseForm(){
   <button class="btn" style="width:100%;margin-top:12px" onclick="savePurchase()">Save purchase</button>`);
 }
 function savePurchase(){
-  const b={id:uid(), productId:document.getElementById("puProd").value, qty:Number(document.getElementById("puQty").value), remaining:Number(document.getElementById("puQty").value), purchaseDate:document.getElementById("puDate").value, arrivalDate:document.getElementById("puArr").value, total:Number(document.getElementById("puTotal").value), supplier:document.getElementById("puSup").value, notes:document.getElementById("puNotes").value};
+  const b={id:crypto.randomUUID(), productId:document.getElementById("puProd").value, qty:Number(document.getElementById("puQty").value), remaining:Number(document.getElementById("puQty").value), purchaseDate:document.getElementById("puDate").value, arrivalDate:document.getElementById("puArr").value, total:Number(document.getElementById("puTotal").value), supplier:document.getElementById("puSup").value, notes:document.getElementById("puNotes").value};
   DB.batches.push(b);
   if(SUPA_MODE){ (async()=>{ try{ const row=await supaInsert("purchase_batches",{user_id:SUPA_USER.id,product_id:b.productId,qty_purchased:b.qty,qty_remaining:b.qty,purchase_date:b.purchaseDate,arrival_date:b.arrivalDate,total_cost:b.total,supplier:b.supplier||null,notes:b.notes||null}); if(row){ b.id=row.id; save(); } }catch(err){ toast("Supabase: "+err.message); } })(); }
   DB.audit.push({t:new Date().toISOString(),msg:`Purchase: ${b.qty} x ${product(b.productId).name} for ${money(b.total)}`}); save(); closeModal(); render(); toast("✅ Purchase recorded");
@@ -334,7 +342,7 @@ function saveSale(){
   // FIFO: oldest batch first
   let left=qty; const batches=DB.batches.filter(b=>b.productId===pid&&b.remaining>0).sort((a,b)=>a.arrivalDate.localeCompare(b.arrivalDate));
   for(const b of batches){ if(left<=0)break; const take=Math.min(b.remaining,left); b.remaining-=take; left-=take; }
-  const saleId=uid(); DB.sales.push({id:saleId, productId:pid, qty, date:document.getElementById("saDate").value, price});
+  const saleId=crypto.randomUUID(); DB.sales.push({id:saleId, productId:pid, qty, date:document.getElementById("saDate").value, price});
   if(SUPA_MODE){ (async()=>{ try{ await SUPA.rpc("record_sale",{p_product:pid,p_qty:qty,p_date:document.getElementById("saDate").value,p_price:price,p_notes:null}); await supaLoadAll(); render(); }catch(err){ toast("Supabase sale: "+err.message); } })(); }
   DB.audit.push({t:new Date().toISOString(),msg:`Sale: ${qty} x ${product(pid).name}`}); save(); closeModal(); render(); toast("✅ Sale recorded — stock decreased");
 }
