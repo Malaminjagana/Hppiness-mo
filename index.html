@@ -10,14 +10,10 @@
 <meta name="apple-mobile-web-app-title" content="Jagana Shop">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
-<title>Jagana African Shop — Inventory</title>
-<!-- ============================================================
-  JAGANA AFRICAN SHOP — PLAIN HTML + CSS + JS VERSION
-  App authentication and data are provided by Supabase.
-  ============================================================ -->
+<title>Happiness Monga</title>
+
 <style>
-/* ================= ✏️ EDIT ME — COLOURS =================
-   Change these 3 colours to change the whole shop look. */
+
 :root{ --green:#0F3D2E; --green2:#1A5C44; --amber:#E8A020; --cream:#FFF9F0; --red:#DC2626; }
 *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--cream);color:#111}
 button{cursor:pointer;min-height:48px} input,select,textarea{font-size:16px !important} /* 16px stops iPhone zooming when you tap a field */
@@ -62,7 +58,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px 8px;
 <!-- ================= LOGIN ================= -->
 <div id="loginPage"><form class="card login-card" onsubmit="return doLogin(event)">
   <!-- ✏️ EDIT ME — SHOP NAME / LOGIN TEXT -->
-  <h1 style="margin:0">🌍 Jagana African Shop</h1>
+  <h1 style="margin:0">🌍 Happiness Monga</h1>
   <p style="color:#666">Private access Mohamed Jagana only.</p><p id="modeBadge" style="font-size:12px"></p>
   <label>Email</label><input id="loginEmail" type="email" required>
   <label>Password</label><input id="loginPass" type="password" required>
@@ -391,7 +387,7 @@ function exportCSV(){
 function settingsHTML(){
   return `<div class="card"><h3>Settings</h3>
   <label>Currency</label><select onchange="setCurrency(this.value)" style="max-width:200px"><option ${DB.currency==="GMD"?"selected":""}>GMD</option><option ${DB.currency==="GBP"?"selected":""}>GBP</option><option ${DB.currency==="USD"?"selected":""}>USD</option></select>
-  <label>Shop name (edit in HTML: search for EDIT ME)</label><input value="Jagana African Shop" disabled>
+  <label>Happiness Monga</label><input value="Happiness Monga" disabled>
   <h3 style="margin-top:20px">Audit log</h3>${DB.audit.slice(-20).reverse().map(a=>`<div style="font-size:13px;padding:6px 0;border-bottom:1px solid #eee">${new Date(a.t).toLocaleString()} — ${a.msg}</div>`).join("")||"<p>No changes yet.</p>"}</div>`;
 }
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
